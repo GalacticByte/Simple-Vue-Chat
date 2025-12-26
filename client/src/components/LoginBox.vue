@@ -1,94 +1,101 @@
 <template>
-  <div class="container-join">
-    <form class="join-form" novalidate @submit.prevent="joinToChat">
-      <h2 class="page-start">Witaj w aplikacji czat</h2>
-      <div class="join-box">
-        <label for="form-label" class="form-label">Podaj swój nick</label>
+  <div
+    class="w-full max-w-md p-8 space-y-8 bg-gray-800 rounded-xl shadow-lg shadow-emerald-500/20 text-gray-100"
+  >
+    <form
+      class="flex flex-col items-center w-full gap-8"
+      novalidate
+      @submit.prevent="handleLogin"
+    >
+      <h2 class="text-2xl font-bold text-center uppercase">
+        Witaj w aplikacji czat
+      </h2>
+      <div class="w-full">
+        <label
+          for="nickname"
+          class="block mb-2 text-sm font-medium text-left text-gray-300"
+          >Podaj swój nick</label
+        >
         <input
-          class="form-input input"
-          id="form-label"
+          id="nickname"
           type="text"
-          :value="username"
+          v-model="nickname"
           placeholder="Podaj swój nick"
           autocomplete="off"
-          @input="(event) => $emit('update:username', event.target.value)"
+          class="block w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
         />
-        <div v-if="errorLoginMsg" class="error-message">
-          {{ errorLoginMsg }}
+        <div v-if="errorMessage" class="mt-2 text-sm text-red-500">
+          {{ errorMessage }}
         </div>
       </div>
-      <button class="btn form-button" type="submit">Dołącz</button>
+      <button
+        class="w-full px-6 py-3 font-semibold text-white bg-emerald-600 rounded-md shadow-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 focus:ring-offset-gray-800 transition-colors"
+        type="submit"
+        :disabled="isLoading"
+      >
+        {{ isLoading ? 'Łączenie...' : 'Dołącz' }}
+      </button>
     </form>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'LoginComponent',
+<script setup lang="ts">
+import { ref } from 'vue'
+import type { LoginResponse } from '@app/shared'
 
-  emits: ['joinToChat', 'update:username'],
-  props: {
-    username: {
-      type: String,
-      required: true,
-    },
-    errorLoginMsg: {
-      type: String,
-      required: true,
-    },
-  },
+// Define events emitted by this component
+const emit = defineEmits<{
+  (e: 'login-success', payload: LoginResponse): void
+}>()
+
+// Reactive state for the input field
+const nickname = ref('')
+// Reactive state for error messages
+const errorMessage = ref('')
+// Reactive state for loading status
+const isLoading = ref(false)
+
+/**
+ * Handles the login form submission.
+ * Validates input, sends a request to the server, and emits success event.
+ */
+const handleLogin = async () => {
+  // Reset error message
+  errorMessage.value = ''
+
+  // Basic validation
+  if (!nickname.value) {
+    errorMessage.value = 'Nickname nie może być pusty.'
+    return
+  }
+
+  // Set loading state
+  isLoading.value = true
+
+  try {
+    // Send login request to the server
+    const response = await fetch(`/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ nickname: nickname.value }),
+    })
+
+    const data: LoginResponse = await response.json()
+
+    if (!response.ok) {
+      throw new Error((data as any).message || 'Wystąpił błąd logowania.')
+    }
+
+    // Emit success event with user data
+    emit('login-success', data)
+  } catch (error) {
+    // Display error message to the user
+    errorMessage.value = (error as Error).message
+  } finally {
+    // Reset loading state
+    isLoading.value = false
+  }
 }
 </script>
-
-<style lang="scss" scoped>
-.container-join {
-  @include flex;
-  width: 50%;
-  border: 2px $accent_color solid;
-  box-shadow: 7px 5px 46px -16px $accent_color;
-  .join-form {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    align-content: space-around;
-    .page-start {
-      margin: 2rem 0 3rem 0;
-      text-transform: uppercase;
-      text-align: center;
-    }
-    .join-box {
-      margin: 3rem 0 6rem 0;
-    }
-    .form-button {
-      padding: 1.2rem 2.8rem;
-      margin: 0 0 2rem 0;
-    }
-  }
-}
-
-/*******MEDIA_QUERY*************/
-
-@include smallerPhone {
-  .container-join {
-    width: 100%;
-    font-size: $font_size_to_340;
-  }
-}
-@include mostPhone {
-  .container-join {
-    width: 100%;
-    font-size: $font_size_to_340;
-  }
-}
-@include mostTablets {
-  .container-join {
-    width: 100%;
-    font-size: $font_size_to_1200;
-  }
-}
-@include smallerDesktop {
-  .container-join {
-    width: 100%;
-  }
-}
-</style>

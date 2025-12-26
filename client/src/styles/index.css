@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+
+body {
+  font-size: 18px;
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+}

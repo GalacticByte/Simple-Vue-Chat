@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["messages"]
+}
+
+model User {
+  id        String    @id @default(uuid())
+  nickname  String    @unique
+  createdAt DateTime  @default(now())
+  messages  Message[]
+
+  @@schema("messages")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  message   String
+  createdAt DateTime @default(now())
+
+  // author snapshot
+  authorId       String
+  authorNickname String
+
+  // optional relationship (runtime)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
+
+  @@schema("messages")
+}

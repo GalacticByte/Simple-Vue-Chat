@@ -1,215 +1,237 @@
 <template>
-  <div class="container">
-    <h1 class="page-headline">Czat Lite</h1>
-    <!-- Responsive toggle switch -->
-    <div class="switch-box" v-if="isReady">
-      <ul class="switch-list">
-        <li
-          class="list-item"
-          :class="{ selected: selected === 0 }"
-          @click="changeSelected(0), (isPreview = false)"
+  <div
+    class="bg-gray-900 text-gray-200 min-h-screen flex flex-col items-center p-4 font-sans"
+  >
+    <div class="relative w-full flex items-center justify-center">
+      <button
+        v-if="isReady"
+        class="md:hidden absolute top-4 left-1 z-30 flex items-center justify-center w-10 h-10 rounded-full bg-gray-800 text-white shadow"
+        @click="isUserListOpen = true"
+        aria-label="Pokaż listę użytkowników"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2"
+          stroke="currentColor"
+          class="w-5 h-5"
         >
-          Użytkownicy
-        </li>
-        <li
-          class="list-item"
-          :class="{ selected: selected === 1 }"
-          @click="changeSelected(1), (isPreview = true)"
-        >
-          Czat
-        </li>
-      </ul>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m6-4a4 4 0 11-8 0 4 4 0 018 0zm6 4a4 4 0 10-8 0"
+          />
+        </svg>
+      </button>
+
+      <h1 class="text-3xl md:text-4xl font-bold text-emerald-400 my-4 md:my-6">
+        Czat Lite
+      </h1>
     </div>
-    <!-- End Responsive toggle -->
 
-    <JoinUserComponent
-      v-if="!isReady"
-      v-model:username="username"
-      @submit="joinToChat"
-      :errorLoginMsg="errorLoginMsg"
-    />
+    <!-- LOGIN -->
+    <LoginBoxComponent v-if="!isReady" @login-success="handleLoginSuccess" />
 
-    <div class="wrapper" v-if="isReady">
-      <UserListComponent :users="users" :isPreview="isPreview" />
+    <!-- CHAT -->
+    <div
+      v-else
+      class="relative flex flex-col md:flex-row w-full gap-4 h-[80vh]"
+    >
+      <Transition
+        enter-active-class="transition-opacity duration-200 ease-out"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="transition-opacity duration-150 ease-in"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="isUserListOpen"
+          class="fixed inset-0 bg-black/40 z-30 md:hidden"
+          @click="isUserListOpen = false"
+        />
+      </Transition>
+
+      <Transition
+        enter-active-class="transition-transform duration-300 ease-out"
+        enter-from-class="-translate-x-full"
+        enter-to-class="translate-x-0"
+        leave-active-class="transition-transform duration-200 ease-in"
+        leave-from-class="translate-x-0"
+        leave-to-class="-translate-x-full"
+      >
+        <UserList
+          v-if="isUserListOpen || isDesktop"
+          class="fixed inset-y-0 left-0 z-40 w-[90%] max-w-md bg-gray-800 md:static md:w-[35%]"
+          :users="usersVM"
+          @logout="logout"
+          @close="isUserListOpen = false"
+        />
+      </Transition>
+
       <ChatBoxComponent
-        :isPreview="isPreview"
-        :messages="messages"
-        :isTyping="isTyping"
-        :userId="userId"
+        class="flex-1 w-full"
+        :messages="messagesVM"
         :errorSendMsg="errorSendMsg"
         v-model:message="message"
-        @submit="sendMessage"
+        @sendMessage="sendMessage"
+        :isPreview="true"
+        :typingUsers="typingUsers"
+        @typing="onInput"
+        @deleteMessage="deleteMessage"
       />
     </div>
   </div>
 </template>
 
-<script>
-import io from 'socket.io-client'
-import { ref, watch } from 'vue'
+<script setup lang="ts">
+import type { MessageDTO, UserDTO, LoginResponse } from '@app/shared'
 
-import JoinUserComponent from '@/components/LoginBox'
-import UserListComponent from '@/components/UserList'
-import ChatBoxComponent from '@/components/ChatBox'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
-export default {
-  name: 'App',
-  components: {
-    JoinUserComponent,
-    UserListComponent,
-    ChatBoxComponent,
-  },
-  setup() {
-    const socket = io('/', {
-      withCredentials: true,
-    })
+import LoginBoxComponent from './components/LoginBox.vue'
+import ChatBoxComponent from './components/ChatBox.vue'
+import UserList from './components/UserList.vue'
+import { useChat } from './composables/useChat'
 
-    // if you want to run locally, please remove comment below
+const isUserListOpen = ref(false)
+const isDesktop = ref(window.innerWidth >= 768)
 
-    // const socket = io('http://localhost:3000')
-    const users = ref([])
-    const messages = ref([])
-    const message = ref('')
-    const username = ref('')
-    const selected = ref(0)
+const updateViewport = () => {
+  isDesktop.value = window.innerWidth >= 768
+  if (isDesktop.value) {
+    isUserListOpen.value = true
+  }
+}
 
-    let isReady = ref(false)
-    let isPreview = ref(false)
-    let isTyping = ref(false)
-    let userId = ref('')
+onMounted(() => {
+  updateViewport()
+  window.addEventListener('resize', updateViewport)
+})
 
-    const changeSelected = (i) => {
-      selected.value = i
-    }
+onUnmounted(() => {
+  window.removeEventListener('resize', updateViewport)
+})
 
-    /*********VALIDATE************* */
+// =======================
+// Chat (transport + state)
+// =======================
+const {
+  messages,
+  users,
+  connect,
+  sendMessage: sendChatMessage,
+  messageDeleted,
+  setTyping,
+  typingUsers,
+  disconnect,
+} = useChat()
 
-    let errorLoginMsg = ref('')
-    let errorSendMsg = ref('')
+// =======================
+// View state
+// =======================
+const message = ref('')
+const isReady = ref(false)
+const errorSendMsg = ref('')
 
-    //***************Socket function*******************
+// current user (from login)
+const myNickname = ref<string | null>(null)
 
-    socket.on('initChat', (data) => {
-      messages.value = data.messages
-    })
+let typingTimeout: number | undefined
 
-    socket.on('userConnected', (username) => {
-      console.log(`${username} has joined`)
-    })
+// =======================
+// DTO → ViewModel mapping
+// =======================
+type ChatMessageVM = {
+  id: string
+  message: string
+  createdAt: string
+  author: string
+  isMine: boolean
+}
+type UserVM = {
+  id: string
+  username: string
+  isMe: boolean
+}
 
-    socket.on('userDisconnected', (username) => {
-      console.log(`${username} has leaved`)
-    })
+const messagesVM = computed<ChatMessageVM[]>(() =>
+  messages.value.map((m: MessageDTO) => ({
+    id: m.id,
+    message: m.message,
+    createdAt: m.createdAt,
+    author: m.author.nickname ?? 'System',
+    isMine: m.author.nickname === myNickname.value,
+  })),
+)
 
-    socket.on('getUsers', (data) => {
-      users.value = data
-    })
+const usersVM = computed<UserVM[]>(() =>
+  users.value.map((u: UserDTO) => ({
+    id: u.id,
+    username: u.nickname,
+    isMe: u.nickname === myNickname.value,
+  })),
+)
 
-    socket.on('newMessage', (data) => {
-      messages.value.push(data)
-    })
+// =======================
+// Login flow
+// =======================
+const handleLoginSuccess = (data: LoginResponse) => {
+  // save token (for reconnect / refresh)
+  localStorage.setItem('token', data.token)
 
-    // *********User Typing********
+  myNickname.value = data.nickname
 
-    socket.on('isTyping', (data) => {
-      isTyping.value = data
-    })
-    socket.on('stopTyping', () => {
-      isTyping.value = false
-    })
+  // socket.io connect
+  connect(data.token)
 
-    watch(message, (m) => {
-      m ? socket.emit('isTyping', username.value) : socket.emit('stopTyping')
-    })
+  // show chat
+  isReady.value = true
+}
 
-    //*****Join User to Chat************
+// =======================
+// Logout user
+// =======================
 
-    const joinToChat = () => {
-      if (/^(([a-zA-Z0-9]{3,}))+$/.test(username.value) == false) {
-        errorLoginMsg.value = 'Użuj minimum 3 liter lub cyfr'
-      } else {
-        socket.emit('enterUsername', { username: username.value })
-        username.value = ''
-        isReady.value = true
-        userId.value = socket.id
-      }
-    }
+const logout = () => {
+  localStorage.removeItem('token')
+  disconnect()
+  isReady.value = false
+  myNickname.value = null
+}
 
-    /*********Send New Message******** */
+// =======================
+// Is typing
+// =======================
 
-    const sendMessage = () => {
-      if (message.value == '') {
-        errorSendMsg.value = 'Pole nie może być puste'
-      } else {
-        socket.emit('newMessage', {
-          username: username.value,
-          message: message.value,
-        })
-        message.value = ''
-      }
-    }
+const onInput = () => {
+  setTyping(true)
 
-    return {
-      socket,
-      username,
-      message,
-      users,
-      messages,
-      joinToChat,
-      sendMessage,
-      userId,
-      isReady,
-      isTyping,
-      isPreview,
-      selected,
-      changeSelected,
-      errorLoginMsg,
-      errorSendMsg,
-    }
-  },
+  clearTimeout(typingTimeout)
+  typingTimeout = window.setTimeout(() => {
+    setTyping(false)
+  }, 800)
+}
+
+// =======================
+// Send message
+// =======================
+const sendMessage = () => {
+  if (!message.value.trim()) {
+    errorSendMsg.value = 'Pole nie może być puste'
+    return
+  }
+
+  sendChatMessage(message.value)
+  message.value = ''
+  errorSendMsg.value = ''
+}
+
+// =======================
+// Delete message
+// =======================
+const deleteMessage = (id: string) => {
+  messageDeleted(id)
 }
 </script>
-
-<style lang="scss">
-@use './scss/index.scss' as *;
-
-.wrapper {
-  @include flex;
-  width: 100%;
-  height: 30rem;
-}
-/*******MEDIA_QUERY*************/
-
-@include smallerPhone {
-  .container {
-    font-size: $font_size_to_340;
-    .wrapper {
-      width: 100%;
-    }
-  }
-}
-@include mostPhone {
-  .container {
-    font-size: $font_size_to_340;
-    .wrapper {
-      width: 100%;
-    }
-  }
-}
-@include mostTablets {
-  .container {
-    font-size: $font_size_to_576;
-    .wrapper {
-      width: 100%;
-    }
-  }
-}
-@include smallerDesktop {
-  .container {
-    font-size: $font_size_to_1200;
-    .wrapper {
-      width: 100%;
-    }
-  }
-}
-</style>

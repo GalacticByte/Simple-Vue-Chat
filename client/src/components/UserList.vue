@@ -1,75 +1,78 @@
 <template>
-  <div class="users-box" :class="[isPreview ? 'none' : '']">
-    <h3 class="users-headline">Użytkownicy Online:</h3>
-    <ul class="users-list" v-for="u in users" :key="u.id">
-      <li class="user-list-item">{{ u.username }}</li>
+  <div
+    class="h-full flex flex-col bg-gray-800 shadow-lg shadow-emerald-500/20 rounded-xl overflow-hidden"
+    :class="isPreview ? 'hidden md:flex' : 'flex'"
+  >
+    <div class="flex items-center gap-2 border-b border-gray-700 px-3 h-14">
+      <h3
+        class="flex-1 text-left md:text-center text-gray-400 uppercase font-semibold"
+      >
+        Użytkownicy Online:
+      </h3>
+      <button
+        class="w-10 h-10 flex items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        aria-label="Wyloguj"
+        title="Wyloguj"
+        @click="$emit('logout')"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="h-6 w-6"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"
+          />
+        </svg>
+      </button>
+
+      <button
+        class="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        @click="$emit('close')"
+        aria-label="Zamknij listę użytkowników"
+      >
+        ✕
+      </button>
+    </div>
+
+    <ul class="overflow-y-auto p-2 grow">
+      <li
+        v-for="u in users"
+        :key="u.id"
+        class="text-emerald-400 font-semibold p-2 text-left list-none rounded-md transition-colors duration-200 hover:bg-gray-700"
+      >
+        {{ u.username }}
+      </li>
     </ul>
   </div>
 </template>
 
-<script>
-export default {
-  props: {
-    users: {
-      type: Array,
-      required: true,
-    },
-    isPreview: {
-      type: Boolean,
-      required: true,
-    },
+<script setup lang="ts">
+import type { PropType } from 'vue'
+
+export interface UserVM {
+  id: string
+  username: string
+}
+
+defineProps({
+  users: {
+    type: Array as PropType<readonly UserVM[]>,
+    required: true,
   },
-}
+  isPreview: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+defineEmits<{
+  (e: 'logout'): void
+  (e: 'close'): void
+}>()
 </script>
-
-<style lang="scss" scoped>
-.users-box {
-  width: 50%;
-  min-height: 100%;
-  box-shadow: 7px 5px 46px -16px $accent_color;
-  border: 2px solid $accent_color;
-  color: #fff;
-  margin: 1rem;
-  .users-headline {
-    @include flex;
-    border-bottom: 2px solid $accent_color;
-    background-color: rgba($accent_color, 0.5);
-    padding: 1.3rem 0;
-    margin: 0;
-    text-transform: uppercase;
-    text-align: center;
-  }
-  .users-list {
-    @include flex;
-    color: $accent_color;
-    font-weight: 600;
-    text-align: center;
-    padding: 0;
-    .user-list-item {
-      width: 100%;
-      padding: 0.5rem 1rem;
-      list-style: none;
-      text-align: left;
-    }
-  }
-}
-
-/*******MEDIA_QUERY*************/
-
-@include smallerPhone {
-  .users-box {
-    width: 100%;
-    margin: 0.5rem;
-  }
-}
-@include mostPhone {
-  .users-box {
-    width: 100%;
-  }
-}
-@include mostTablets {
-  .users-box {
-    width: 100%;
-  }
-}
-</style>
