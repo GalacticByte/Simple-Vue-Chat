@@ -2,7 +2,7 @@
   <div
     class="bg-gray-900 text-gray-200 min-h-screen flex flex-col items-center p-4 font-sans"
   >
-    <div class="relative w-full flex items-center justify-center">
+    <header class="relative w-full flex items-center justify-center">
       <button
         v-if="isReady"
         class="md:hidden absolute top-4 left-1 z-30 flex items-center justify-center w-10 h-10 rounded-full bg-gray-800 text-white shadow"
@@ -28,13 +28,15 @@
       <h1 class="text-3xl md:text-4xl font-bold text-emerald-400 my-4 md:my-6">
         Czat Lite
       </h1>
-    </div>
+    </header>
 
     <!-- LOGIN -->
-    <LoginBoxComponent v-if="!isReady" @login-success="handleLoginSuccess" />
+    <main v-if="!isReady" class="w-full flex justify-center">
+      <LoginBoxComponent @login-success="handleLoginSuccess" />
+    </main>
 
     <!-- CHAT -->
-    <div
+    <main
       v-else
       class="relative flex flex-col md:flex-row w-full gap-4 h-[80vh]"
     >
@@ -81,7 +83,7 @@
         @typing="onInput"
         @deleteMessage="deleteMessage"
       />
-    </div>
+    </main>
   </div>
 </template>
 
