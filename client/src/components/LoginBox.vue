@@ -22,14 +22,21 @@
           v-model="nickname"
           placeholder="Podaj swój nick"
           autocomplete="off"
+          :aria-invalid="!!errorMessage"
+          :aria-describedby="errorMessage ? 'login-error' : undefined"
           class="block w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
         />
-        <div v-if="errorMessage" class="mt-2 text-sm text-red-500">
+        <div
+          v-if="errorMessage"
+          id="login-error"
+          role="alert"
+          class="mt-2 text-sm text-red-500"
+        >
           {{ errorMessage }}
         </div>
       </div>
       <button
-        class="w-full px-6 py-3 font-semibold text-white bg-emerald-600 rounded-md shadow-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 focus:ring-offset-gray-800 transition-colors"
+        class="w-full px-6 py-3 font-semibold text-white bg-emerald-700 rounded-md shadow-md hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 focus:ring-offset-gray-800 transition-colors cursor-pointer"
         type="submit"
         :disabled="isLoading"
       >

@@ -9,7 +9,12 @@
       class="fixed inset-0 z-40"
       @click="activeMenuId = null"
     ></div>
-    <div class="grow overflow-y-auto p-4 space-y-4" ref="chatArea">
+    <div
+      class="grow overflow-y-auto p-4 space-y-4"
+      ref="chatArea"
+      role="log"
+      aria-live="polite"
+    >
       <TransitionGroup name="list" tag="div">
         <div
           v-for="m in messages"
@@ -38,7 +43,7 @@
                 class="mt-1 max-w-xs lg:max-w-md p-3 rounded-lg wrap-break-word my-2"
                 :class="
                   m.isMine
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-emerald-700 text-white'
                     : 'bg-gray-700 text-gray-200'
                 "
               >
@@ -48,7 +53,9 @@
               <div v-if="m.isMine" class="relative">
                 <button
                   @click.stop="toggleMenu(m.id)"
-                  class="p-1 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-gray-700/50 focus:outline-none"
+                  class="p-1 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                  aria-label="Opcje wiadomości"
+                  :aria-expanded="activeMenuId === m.id"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -56,6 +63,7 @@
                     viewBox="0 0 24 24"
                     stroke-width="1.5"
                     stroke="currentColor"
+                    aria-hidden="true"
                     class="w-6 h-6"
                   >
                     <path
@@ -72,7 +80,7 @@
                 >
                   <button
                     @click="deleteMessage(m.id)"
-                    class="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-700 flex items-center gap-2 transition-colors"
+                    class="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-700 flex items-center gap-2 transition-colors focus:outline-none focus:bg-gray-700 cursor-pointer"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -80,6 +88,7 @@
                       viewBox="0 0 24 24"
                       stroke-width="1.5"
                       stroke="currentColor"
+                      aria-hidden="true"
                       class="w-4 h-4"
                     >
                       <path
@@ -108,7 +117,8 @@
       </TransitionGroup>
       <div
         v-if="typingUsers.length"
-        class="px-4 pb-2 text-sm text-emerald-600 italic animate-pulse"
+        class="px-4 pb-2 text-sm text-emerald-400 italic animate-pulse"
+        role="status"
       >
         <span v-for="u in typingUsers" :key="u.id">
           {{ u.nickname }} pisze...
@@ -135,15 +145,22 @@
           autocomplete="off"
           placeholder="Cześć co u Ciebie?"
           @input="handleInput"
+          :aria-invalid="!!errorSendMsg"
+          :aria-describedby="errorSendMsg ? 'send-error' : undefined"
           class="mt-1 block w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
-        <div v-if="errorSendMsg" class="mt-1 text-sm text-red-500">
+        <div
+          v-if="errorSendMsg"
+          id="send-error"
+          role="alert"
+          class="mt-1 text-sm text-red-500"
+        >
           {{ errorSendMsg }}
         </div>
       </div>
       <button
         type="submit"
-        class="px-6 py-2 font-semibold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 rounded-md transition-all duration-300 ease-in-out"
+        class="px-6 py-2 font-semibold text-white bg-emerald-700 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 rounded-md transition-all duration-300 ease-in-out cursor-pointer"
       >
         Wyślij
       </button>
