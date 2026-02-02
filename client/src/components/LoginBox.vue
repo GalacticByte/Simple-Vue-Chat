@@ -51,9 +51,7 @@ import { ref } from 'vue'
 import type { LoginResponse } from '@app/shared'
 
 // Define events emitted by this component
-const emit = defineEmits<{
-  (e: 'login-success', payload: LoginResponse): void
-}>()
+const emit = defineEmits<(e: 'login-success', payload: LoginResponse) => void>()
 
 // Reactive state for the input field
 const nickname = ref('')
