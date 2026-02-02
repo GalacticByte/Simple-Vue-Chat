@@ -211,7 +211,7 @@ const onInput = () => {
   setTyping(true)
 
   clearTimeout(typingTimeout)
-  typingTimeout = window.setTimeout(() => {
+  typingTimeout = globalThis.setTimeout(() => {
     setTyping(false)
   }, 800)
 }

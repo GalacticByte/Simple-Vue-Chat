@@ -115,15 +115,14 @@
           </div>
         </div>
       </TransitionGroup>
-      <div
+      <output
         v-if="typingUsers.length"
-        class="px-4 pb-2 text-sm text-emerald-400 italic animate-pulse"
-        role="status"
+        class="block px-4 pb-2 text-sm text-emerald-400 italic animate-pulse"
       >
         <span v-for="u in typingUsers" :key="u.id">
           {{ u.nickname }} pisze...
         </span>
-      </div>
+      </output>
     </div>
 
     <form

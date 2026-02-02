@@ -73,7 +73,7 @@ const registerListeners = () => {
   })
 
   socket.on('userConnected', (data: UserDTO) => {
-    if (!users.value.find((u: UserDTO) => u.id === data.id)) {
+    if (!users.value.some((u: UserDTO) => u.id === data.id)) {
       users.value.push(data)
     }
   })

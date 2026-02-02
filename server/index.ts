@@ -1,8 +1,8 @@
 import 'dotenv/config'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import express from 'express'
-import { createServer } from 'http'
+import { createServer } from 'node:http'
 import { Server, Socket } from 'socket.io'
 import cors from 'cors'
 import morgan from 'morgan'
@@ -72,6 +72,7 @@ io.use((socket, next) => {
     socket.data.nickname = payload.nickname
     next()
   } catch (err) {
+    console.error('Token verification failed:', err)
     return next(new Error('Authentication error: Invalid token'))
   }
 })
