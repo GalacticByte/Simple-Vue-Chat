@@ -1,12 +1,13 @@
 <template>
-  <div
+  <aside
     class="h-full flex flex-col bg-gray-800 shadow-lg shadow-emerald-500/20 rounded-xl overflow-hidden"
-    :class="isPreview ? 'hidden md:flex' : 'flex'"
   >
-    <div class="flex items-center gap-2 border-b border-gray-700 px-3 h-14">
+    <div
+      class="flex items-center gap-2 border-b border-gray-700 px-3 h-14 shrink-0"
+    >
       <h3
         id="online-users-title"
-        class="flex-1 text-left md:text-center text-gray-400 uppercase font-semibold"
+        class="flex-1 text-left md:text-center text-gray-400 uppercase font-semibold truncate"
       >
         Użytkownicy Online:
       </h3>
@@ -34,11 +35,24 @@
       </button>
 
       <button
-        class="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+        class="md:hidden w-10 h-10 flex items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
         @click="$emit('close')"
         aria-label="Zamknij listę użytkowników"
       >
-        ✕
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="w-6 h-6"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
       </button>
     </div>
 
@@ -46,32 +60,30 @@
       <li
         v-for="u in users"
         :key="u.id"
-        class="text-emerald-400 font-semibold p-2 text-left list-none rounded-md transition-colors duration-200 hover:bg-gray-700"
+        class="font-semibold p-2 text-left list-none rounded-md transition-colors duration-200"
+        :class="
+          u.isMe
+            ? 'text-white bg-emerald-600/20'
+            : 'text-emerald-400 hover:bg-gray-700'
+        "
       >
         {{ u.username }}
+        <span v-if="u.isMe" class="text-xs opacity-75 ml-1">(Ty)</span>
       </li>
     </ul>
-  </div>
+  </aside>
 </template>
 
 <script setup lang="ts">
-import type { PropType } from 'vue'
-
 export interface UserVM {
   id: string
   username: string
+  isMe?: boolean
 }
 
-defineProps({
-  users: {
-    type: Array as PropType<readonly UserVM[]>,
-    required: true,
-  },
-  isPreview: {
-    type: Boolean,
-    default: false,
-  },
-})
+defineProps<{
+  users: UserVM[]
+}>()
 
 defineEmits<{
   (e: 'logout'): void
