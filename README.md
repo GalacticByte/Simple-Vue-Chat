@@ -1,49 +1,70 @@
 # Chat-app
 
-### [Live](https://chat-app-lh2l.onrender.com/)
+### [Live Demo](https://chat-app-lh2l.onrender.com/)
 
-A simple real-time chat application built with Vue 3 and Socket.io.
-The project uses a session-based user model and persistent message storage to ensure consistent chat history. Messages are stored in a PostgreSQL database using Prisma.
+A real-time chat application built with Vue 3 and Socket.io.
 
-![app preview](https://github.com/GalacticByte/Simple-Vue-Chat/blob/main/app-screenshot.png)
+![app preview](./app-screenshot.png)
 
-## Functionalities
+## Features
 
-- User login (session-based)
-- User logout
-- Send messages with timestamp information
-- Real-time typing indicator
+- JWT-based user login using a nickname
+- Automatic user removal from the database on logout
 - Real-time messaging via Socket.io
-- Persistent message storage in database
+- Real-time typing indicator (`isTyping`)
+- Message deletion by the author
+- Persistent message storage in PostgreSQL
 - Immutable author snapshot stored with each message to preserve chat history consistency
 
-## Technologies
+## Tech Stack
 
-- TypeScript (used across the entire project)
+### Language
+
+- TypeScript
 
 ### Frontend
 
 - Vue 3
 - Vite
 - Tailwind CSS
+- Pinia (state management)
 
 ### Backend
 
 - Node.js
-- Express
+- Express.js
+- Socket.io
 
-### Real-time Communication
+### Shared Contracts
 
-- Socket.io (client & server)
+- Code-first DTOs
 
 ### Authentication
 
-- JWT
+- JWT (JSON Web Tokens)
 
 ### Database
 
 - PostgreSQL
-- Prisma
+- Prisma (ORM)
+
+## Architecture Overview
+
+The application uses a code-first DTO contract to define data structures for both HTTP and real-time Socket.io communication.
+
+### User lifecycle
+
+1. User logs in by providing a nickname.
+2. A user entity is created and stored in the database.
+3. Messages reference an immutable author snapshot (nickname at send time).
+4. On logout, the user entity is removed from the database.
+5. Message authors remain unchanged to preserve chat history integrity.
+
+### Real-time flow
+
+- Messages and typing indicators are handled via Socket.io.
+- Socket events follow the code-first DTOs.
+- The frontend uses Pinia to efficiently manage chat and UI state.
 
 ## Setup
 
@@ -51,7 +72,7 @@ To run this project, install it locally using npm:
 
 #### Server
 
-```
+```bash
 $ cd server
 $ npm install
 $ npm run dev
@@ -60,7 +81,7 @@ $ npm run dev
 
 #### Client
 
-```
+```bash
 $ cd client
 $ npm install
 $ npm run dev
@@ -69,18 +90,22 @@ $ npm run dev
 
 #### Shared
 
-```
+```bash
 $ cd shared
 $ npm install
 $ npm run build
 
 ```
 
-## Architecture and Design Decisions
+## Design Decisions
 
-This project includes both frontend and minimal backend logic to support real-time chat functionality and ensure data consistency.
+- Code-first DTO contracts provide a single source of truth for communication data, simplifying development and ensuring consistency.
 
-Users are managed as session-based entities: they are stored in the database upon login and removed on logout.
-Messages are persistent and include an immutable snapshot of the author's nickname at the time of sending, ensuring chat history remains consistent even after a user disconnects.
+- Message authors are stored as immutable snapshots to preserve chat history consistency.
+  User entities are intentionally removed on logout as a project simplification, allowing the data model to focus on real-time behavior rather than long-lived user accounts.
 
-The architecture and data handling were intentionally designed for this portfolio project to demonstrate practical development skills and real-time application concepts.
+- Pinia store used to optimize frontend state handling and reduce unnecessary reactivity.
+
+- Strict TypeScript usage across all layers to minimize runtime errors and improve maintainability.
+
+- This project was built as a portfolio application to demonstrate practical experience with real-time systems, typed contracts, and full-stack TypeScript architecture.
